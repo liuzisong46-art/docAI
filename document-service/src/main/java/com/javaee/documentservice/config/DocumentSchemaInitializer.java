@@ -63,7 +63,7 @@ public class DocumentSchemaInitializer implements ApplicationRunner {
                     CREATE TABLE IF NOT EXISTS `document` (
                       `id` VARCHAR(64) NOT NULL PRIMARY KEY COMMENT '文档ID',
                       `title` VARCHAR(255) NOT NULL COMMENT '文档标题',
-                      `content` TEXT COMMENT '文档内容',
+                      `content` LONGTEXT COMMENT '文档内容',
                       `summary` TEXT COMMENT '文档摘要',
                       `keywords` TEXT COMMENT '关键词（JSON格式）',
                       `file_id` VARCHAR(64) COMMENT '关联文件ID',
@@ -85,7 +85,8 @@ public class DocumentSchemaInitializer implements ApplicationRunner {
                     """);
 
             addColumnIfMissing(connection, statement, "document", "content",
-                    "ALTER TABLE `document` ADD COLUMN `content` TEXT COMMENT '文档内容'");
+                    "ALTER TABLE `document` ADD COLUMN `content` LONGTEXT COMMENT '文档内容'");
+            execute(statement, "ALTER TABLE `document` MODIFY COLUMN `content` LONGTEXT COMMENT '文档内容'");
             addColumnIfMissing(connection, statement, "document", "summary",
                     "ALTER TABLE `document` ADD COLUMN `summary` TEXT COMMENT '文档摘要'");
             addColumnIfMissing(connection, statement, "document", "keywords",
@@ -154,7 +155,7 @@ public class DocumentSchemaInitializer implements ApplicationRunner {
                       `document_id` VARCHAR(64) NOT NULL COMMENT '所属文档ID',
                       `version_number` INT NOT NULL COMMENT '版本号',
                       `title` VARCHAR(255) NOT NULL COMMENT '文档标题',
-                      `content` TEXT COMMENT '文档内容',
+                      `content` LONGTEXT COMMENT '文档内容',
                       `summary` TEXT COMMENT '文档摘要',
                       `keywords` TEXT COMMENT '关键词',
                       `change_log` VARCHAR(500) COMMENT '变更日志',
@@ -171,7 +172,8 @@ public class DocumentSchemaInitializer implements ApplicationRunner {
             addColumnIfMissing(connection, statement, "document_version", "title",
                     "ALTER TABLE `document_version` ADD COLUMN `title` VARCHAR(255) NOT NULL COMMENT '文档标题'");
             addColumnIfMissing(connection, statement, "document_version", "content",
-                    "ALTER TABLE `document_version` ADD COLUMN `content` TEXT COMMENT '文档内容'");
+                    "ALTER TABLE `document_version` ADD COLUMN `content` LONGTEXT COMMENT '文档内容'");
+            execute(statement, "ALTER TABLE `document_version` MODIFY COLUMN `content` LONGTEXT COMMENT '文档内容'");
             addColumnIfMissing(connection, statement, "document_version", "summary",
                     "ALTER TABLE `document_version` ADD COLUMN `summary` TEXT COMMENT '文档摘要'");
             addColumnIfMissing(connection, statement, "document_version", "keywords",

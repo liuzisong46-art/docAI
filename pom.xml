@@ -162,6 +162,7 @@
         <module>ai-service</module>
         <module>document-service</module>
         <module>gateway-service</module>
+        <module>mcp-server</module>
     </modules>
 
 </project>

@@ -24,12 +24,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
--- 插入初始数据
-INSERT INTO `user` (`username`, `password`, `email`, `phone`, `role`, `status`) VALUES
--- 管理员账号（密码：${DOC_AI_ADMIN_PASSWORD}）
-('admin', '${DOC_AI_PASSWORD_HASH}', '${DOC_AI_ADMIN_EMAIL}', '${DOC_AI_ADMIN_PHONE}', 'ADMIN', 1),
--- 测试用户（密码：${DOC_AI_USER_PASSWORD}）
-('user', '${DOC_AI_PASSWORD_HASH}', '${DOC_AI_USER_EMAIL}', '${DOC_AI_USER_PHONE}', 'USER', 1);
+-- 本地环境不写入带占位符的演示账号；请通过注册接口创建测试用户。
 
 -- 说明：
 -- 1. 密码使用BCrypt加密，示例密码为：${DOC_AI_ADMIN_PASSWORD} 和 ${DOC_AI_USER_PASSWORD}

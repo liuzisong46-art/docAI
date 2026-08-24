@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS `document` (
   `id` VARCHAR(64) NOT NULL PRIMARY KEY COMMENT '文档ID',
   `title` VARCHAR(255) NOT NULL COMMENT '文档标题',
-  `content` TEXT COMMENT '文档内容',
+  `content` LONGTEXT COMMENT '文档内容',
   `summary` TEXT COMMENT '文档摘要',
   `keywords` TEXT COMMENT '关键词（JSON格式）',
   `file_id` VARCHAR(64) COMMENT '关联文件ID',
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `document_version` (
   `document_id` VARCHAR(64) NOT NULL COMMENT '所属文档ID',
   `version_number` INT NOT NULL COMMENT '版本号',
   `title` VARCHAR(255) NOT NULL COMMENT '文档标题',
-  `content` TEXT COMMENT '文档内容',
+  `content` LONGTEXT COMMENT '文档内容',
   `summary` TEXT COMMENT '文档摘要',
   `keywords` TEXT COMMENT '关键词',
   `change_log` VARCHAR(500) COMMENT '变更日志',

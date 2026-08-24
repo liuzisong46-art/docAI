@@ -1,4 +1,4 @@
-FROM swr.cn-north-4.myhuaweicloud.com/qxk/jdk-17:latest
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY target/file-service-1.0.0.jar /app/file-service.jar
 EXPOSE 8082

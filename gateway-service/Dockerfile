@@ -1,4 +1,4 @@
-FROM swr.cn-north-4.myhuaweicloud.com/qxk/jdk-17:latest
+FROM eclipse-temurin:17-jre
 
 # 维护者信息
 MAINTAINER qxk

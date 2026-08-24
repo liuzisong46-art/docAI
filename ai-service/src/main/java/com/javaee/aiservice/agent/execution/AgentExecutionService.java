@@ -191,7 +191,7 @@ public class AgentExecutionService {
                 executedSignatures.add(tr.getToolName() + ":" + safeJson(tr.getData()));
             }
             iterations = intValue(existingSnapshot.get("iterations"), 0);
-            int pendingIteration = firstRunnableIteration(plan);
+            int pendingIteration = firstRunnableIteration(plan); //找到 plan中第一个能执行的step的num
             startIteration = pendingIteration > 0 ? pendingIteration : iterations + 1;
             toolCallCount = intValue(existingSnapshot.get("toolCallCount"), 0);
             requiresAction = false;

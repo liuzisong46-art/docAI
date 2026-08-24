@@ -1,0 +1,15 @@
+server:
+  port: ${MCP_SERVER_PORT:8090}
+spring:
+  application:
+    name: docai-mcp-server
+  ai:
+    mcp:
+      server:
+        name: docai-mcp-server
+        version: 1.0.0
+        type: SYNC
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message
+docai:
+  ai-base-url: ${DOC_AI_BASE_URL:http://ai-service:8083}
