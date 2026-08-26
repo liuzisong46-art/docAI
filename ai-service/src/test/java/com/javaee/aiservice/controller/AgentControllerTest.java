@@ -3,6 +3,7 @@ package com.javaee.aiservice.controller;
 import com.javaee.aiservice.agent.KnowledgeIndexAgent;
 import com.javaee.aiservice.agent.execution.AgentExecutionService;
 import com.javaee.aiservice.agent.execution.task.AgentTaskRegistry;
+import com.javaee.aiservice.conversation.ContextManager;
 import com.javaee.aiservice.conversation.ConversationManager;
 import com.javaee.aiservice.security.RequestUserContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,6 +36,7 @@ class AgentControllerTest {
     private AgentExecutionService agentExecutionService;
     private RequestUserContext requestUserContext;
     private ConversationManager conversationManager;
+    private ContextManager contextManager;
 
     @BeforeEach
     void setUp() {
@@ -43,6 +46,7 @@ class AgentControllerTest {
         agentExecutionService = mock(AgentExecutionService.class);
         requestUserContext = mock(RequestUserContext.class);
         conversationManager = mock(ConversationManager.class);
+        contextManager = mock(ContextManager.class);
 
         when(requestUserContext.getRequiredUserId()).thenReturn("user-1");
         when(requestUserContext.getCurrentRole()).thenReturn("user");
@@ -53,6 +57,7 @@ class AgentControllerTest {
         ReflectionTestUtils.setField(controller, "agentExecutionService", agentExecutionService);
         ReflectionTestUtils.setField(controller, "requestUserContext", requestUserContext);
         ReflectionTestUtils.setField(controller, "conversationManager", conversationManager);
+        ReflectionTestUtils.setField(controller, "contextManager", contextManager);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
@@ -69,6 +74,16 @@ class AgentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].traceId").value("trace-1"));
+    }
+
+    @Test
+    void endConversationDeletesConversationAndContext() throws Exception {
+        mockMvc.perform(post("/api/ai/agent/chat/conversation-1/end"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(true));
+
+        verify(conversationManager).deleteConversationForUser("conversation-1", "user-1");
+        verify(contextManager).clearContext("conversation-1");
     }
 
     @Test

@@ -3,12 +3,13 @@ package com.javaee.aiservice.conversation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 上下文管理器
@@ -23,6 +24,9 @@ public class ContextManager {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Value("${ai.conversation.expiry-hours:24}")
+    private int expiryHours;
 
     /**
      * 获取对话上下文
@@ -54,6 +58,7 @@ public class ContextManager {
 
         String key = CONTEXT_PREFIX + conversationId;
         redisTemplate.opsForHash().putAll(key, updates);
+        refreshExpiry(key);
         
         log.debug("更新上下文: conversationId={}, updates={}", conversationId, updates.size());
     }
@@ -67,6 +72,7 @@ public class ContextManager {
     public void setContextValue(String conversationId, String key, Object value) {
         String contextKey = CONTEXT_PREFIX + conversationId;
         redisTemplate.opsForHash().put(contextKey, key, value);
+        refreshExpiry(contextKey);
         
         log.debug("设置上下文字段: conversationId={}, key={}", conversationId, key);
     }
@@ -109,7 +115,12 @@ public class ContextManager {
         String key = CONTEXT_PREFIX + conversationId;
         redisTemplate.delete(key);
         redisTemplate.opsForHash().putAll(key, currentContext);
+        refreshExpiry(key);
         
         log.debug("合并上下文: conversationId={}, size={}", conversationId, currentContext.size());
+    }
+
+    private void refreshExpiry(String key) {
+        redisTemplate.expire(key, Duration.ofHours(expiryHours));
     }
 }

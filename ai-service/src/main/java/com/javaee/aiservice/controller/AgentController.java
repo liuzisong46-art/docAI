@@ -5,6 +5,7 @@ import com.javaee.aiservice.agent.execution.AgentExecutionService;
 import com.javaee.aiservice.agent.execution.model.AgentExecutionRequest;
 import com.javaee.aiservice.agent.execution.task.AgentTaskRegistry;
 import com.javaee.aiservice.agent.execution.tool.AgentToolDefinition;
+import com.javaee.aiservice.conversation.ContextManager;
 import com.javaee.aiservice.conversation.ConversationManager;
 import com.javaee.aiservice.rag.DocumentSegmenter;
 import com.javaee.aiservice.rag.KnowledgeBase;
@@ -39,6 +40,9 @@ public class AgentController {
 
     @Autowired
     private ConversationManager conversationManager;
+
+    @Autowired
+    private ContextManager contextManager;
 
     @Autowired
     private RequestUserContext requestUserContext;
@@ -220,6 +224,7 @@ public class AgentController {
     public Result<Boolean> endConversation(
             @Parameter(description = "对话ID") @PathVariable String conversationId) {
         conversationManager.deleteConversationForUser(conversationId, requestUserContext.getRequiredUserId());
+        contextManager.clearContext(conversationId);
         return Result.success(true);
     }
 
