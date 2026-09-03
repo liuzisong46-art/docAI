@@ -249,13 +249,14 @@ public class KnowledgeBase {
                 String id = (String) result.get("id");
                 if (!seenIds.contains(id)) {
                     seenIds.add(id);
+                    Map<String, Object> candidate = new HashMap<>(result);
                     String content = getSegmentContent(id);
                     if (content == null) {
                         content = getDocumentContent(id);
                     }
-                    result.put("content", content);
-                    result.put("source", "vector");
-                    combinedResults.add(result);
+                    candidate.put("content", content);
+                    candidate.put("source", "vector");
+                    combinedResults.add(candidate);
                 }
             }
 
@@ -263,21 +264,24 @@ public class KnowledgeBase {
                 String id = (String) result.get("id");
                 if (!seenIds.contains(id)) {
                     seenIds.add(id);
+                    Map<String, Object> candidate = new HashMap<>(result);
                     String content = getSegmentContent(id);
                     if (content == null) {
                         content = getDocumentContent(id);
                     }
-                    result.put("content", content);
-                    result.put("source", "bm25");
-                    combinedResults.add(result);
+                    candidate.put("content", content);
+                    candidate.put("source", "bm25");
+                    combinedResults.add(candidate);
                 }
             }
 
             return combinedResults.subList(0, Math.min(topK, combinedResults.size()));
 
         } catch (Exception e) {
-            log.error("混合检索失败", e);
-            throw new RuntimeException("混合检索失败: " + e.getMessage(), e);
+            // Embedding 服务不可用时，保留关键词检索能力，避免 RAG 故障阻断普通对话。
+            log.warn("向量检索不可用，降级为 BM25 关键词检索: {}", e.getMessage());
+            List<Map<String, Object>> bm25Results = bm25Search(query, topK, filters);
+            return bm25Results.subList(0, Math.min(topK, bm25Results.size()));
         }
     }
 
@@ -301,8 +305,9 @@ public class KnowledgeBase {
 
             return results;
         } catch (Exception e) {
-            log.error("混合检索加重排序失败", e);
-            throw new RuntimeException("混合检索加重排序失败: " + e.getMessage(), e);
+            // 重排序服务不可用时直接使用混合检索候选结果。
+            log.warn("重排序不可用，返回未重排序的检索结果: {}", e.getMessage());
+            return hybridSearch(query, topK, strategyType, filters);
         }
     }
 

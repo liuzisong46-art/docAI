@@ -15,6 +15,7 @@ import com.javaee.aiservice.agent.execution.model.AgentStepStatus;
 import com.javaee.aiservice.agent.execution.model.AgentToolResult;
 import com.javaee.aiservice.agent.execution.reflection.AgentReflection;
 import com.javaee.aiservice.agent.execution.reflection.AgentReflectionService;
+import com.javaee.aiservice.agent.execution.skill.AgentSkillRegistry;
 import com.javaee.aiservice.agent.execution.task.AgentTaskRegistry;
 import com.javaee.aiservice.agent.execution.tool.AgentToolDefinition;
 import com.javaee.aiservice.agent.execution.tool.AgentToolParameterDefinition;
@@ -41,6 +42,7 @@ import com.javaee.aiservice.service.FileVersionService;
 import com.javaee.aiservice.service.MinIOService;
 import com.javaee.aiservice.service.RecycleBinService;
 import com.javaee.aiservice.skills.SkillExecutorService;
+import com.javaee.aiservice.skills.SkillDefinition;
 import com.javaee.common.utils.UserBucketUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +124,9 @@ public class AgentExecutionService {
 
     @Autowired
     private AgentToolRegistry toolRegistry;
+
+    @Autowired
+    private AgentSkillRegistry skillRegistry;
 
     @Autowired
     private AgentApprovalService agentApprovalService;
@@ -398,6 +403,7 @@ public class AgentExecutionService {
         response.put("answer", finalAnswer);
         response.put("context", contextManager.getContext(conversationId));
         response.put("availableTools", toolRegistry.list());
+        response.put("availableSkills", skillRegistry == null ? List.of() : skillRegistry.list());
         response.put("iterations", iterations);
         response.put("toolCallCount", toolCallCount);
         response.put("stoppedReason", stoppedReason);
@@ -421,6 +427,19 @@ public class AgentExecutionService {
 
     public List<AgentToolDefinition> listTools() {
         return toolRegistry.list();
+    }
+
+    public List<SkillDefinition> listSkills() {
+        return skillRegistry == null ? List.of() : skillRegistry.list();
+    }
+
+    private boolean containsCapability(String name) {
+        return toolRegistry.contains(name) || skillRegistry != null && skillRegistry.contains(name);
+    }
+
+    private AgentToolDefinition getCapabilityDefinition(String name) {
+        AgentToolDefinition tool = toolRegistry.get(name);
+        return tool != null || skillRegistry == null ? tool : skillRegistry.getPlannerDefinition(name);
     }
 
     @SuppressWarnings("unchecked")
@@ -1064,7 +1083,7 @@ public class AgentExecutionService {
         return """
                 你是DocAI的任务规划器。请只输出JSON数组，不要输出解释、Markdown或代码块。
                 %s
-                只能从工具列表中选择toolName；如不需要工具，使用direct-answer。
+                只能从工具列表或技能列表中选择toolName；如不需要能力调用，使用direct-answer。
                 多步任务可以输出多个步骤，但不要超过5步；参数必须来自用户任务或上下文，不确定时先用direct-answer询问澄清。
                 对危险操作(file-restore,file-version-switch)必须等待用户确认；file-delete 在前端已确认且 documentId 或 objectName 明确时可执行永久删除，不进入回收站。不要规划文件上传，文件上传必须由用户通过页面或上传接口自行完成。
                 document-write 和 text-to-file 只返回前端写入补丁，不会保存MinIO；只有用户明确要求写入当前文档或上下文 frontendDocumentWrite=true 时才使用。
@@ -1072,12 +1091,15 @@ public class AgentExecutionService {
                 工具列表:
                 %s
 
+                技能列表:
+                %s
+
                 用户任务:
                 %s
 
                 上下文:
                 %s
-                """.formatted(plannerJsonContract(), toolCatalog(), request.getTask(), safeJson(context));
+                """.formatted(plannerJsonContract(), toolCatalog(), skillCatalog(), request.getTask(), safeJson(context));
     }
 
     private String toolCatalog() {
@@ -1092,6 +1114,18 @@ public class AgentExecutionService {
         }
         tools.append("提示: 如果用户任务缺少必填参数或存在歧义，请优先选择 ask-user 工具向用户澄清，不要凭空填充参数。\n");
         return tools.toString();
+    }
+
+    private String skillCatalog() {
+        StringBuilder skills = new StringBuilder();
+        for (SkillDefinition skill : listSkills()) {
+            skills.append("- ").append(skill.id()).append(": ").append(skill.description())
+                    .append(" 类型: composite-skill")
+                    .append(" 类别: ").append(skill.category())
+                    .append(" 必填参数: ").append(skill.requiredParameters())
+                    .append(" 参数: ").append(safeJson(skill.parameters())).append("\n");
+        }
+        return skills.toString();
     }
 
     private boolean areDependenciesSatisfied(AgentPlanStep step, List<AgentPlanStep> plan) {
@@ -1299,7 +1333,7 @@ public class AgentExecutionService {
         List<AgentPlanStep> normalized = new ArrayList<>();
         int index = 1;
         for (AgentPlanStep step : plan) {
-            if (!toolRegistry.contains(step.getToolName())) {
+            if (!containsCapability(step.getToolName())) {
                 step.setToolName("direct-answer");
             }
             if (isBlank(step.getId())) {
@@ -1308,7 +1342,7 @@ public class AgentExecutionService {
             if (isBlank(step.getDescription())) {
                 step.setDescription(request.getTask());
             }
-            AgentToolDefinition definition = toolRegistry.get(step.getToolName());
+            AgentToolDefinition definition = getCapabilityDefinition(step.getToolName());
             if (definition != null) {
                 if (isBlank(step.getRiskLevel()) || "low".equals(step.getRiskLevel())) {
                     step.setRiskLevel(definition.getRiskLevel());
@@ -1631,7 +1665,7 @@ public class AgentExecutionService {
     }
 
     private AgentToolResult validateToolParameters(AgentPlanStep step) {
-        AgentToolDefinition definition = toolRegistry.get(step.getToolName());
+        AgentToolDefinition definition = getCapabilityDefinition(step.getToolName());
         if (definition == null) {
             return null;
         }
@@ -1903,13 +1937,7 @@ public class AgentExecutionService {
     }
 
     private AgentToolResult executeHtmlPpt(Map<String, Object> params) {
-        Object result = skillExecutorService.executeSkill(
-                "HTML PPT Skill",
-                firstNonBlank(asString(params.get("outline")), ""),
-                firstNonBlank(asString(params.get("theme")), "tokyo-night"),
-                firstNonBlank(asString(params.get("title")), "演示文稿"),
-                asString(params.get("model"))
-        );
+        Object result = skillExecutorService.executeSkill("html-ppt-generate", params);
         return AgentToolResult.success("html-ppt-generate", "HTML PPT生成完成", toMap(result));
     }
 
@@ -2120,7 +2148,7 @@ public class AgentExecutionService {
 
     private AgentToolResult enforceDestructiveApproval(AgentPlanStep step, Map<String, Object> context,
                                                        Map<String, Object> approvalParams) {
-        AgentToolDefinition definition = toolRegistry.get(step.getToolName());
+        AgentToolDefinition definition = getCapabilityDefinition(step.getToolName());
         if (definition == null || !definition.isDestructive()) {
             context.remove("confirmedAction");
             return null;

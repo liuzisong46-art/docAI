@@ -9,7 +9,9 @@ import java.io.IOException;
 
 @Component
 public class McpBearerTokenFilter extends OncePerRequestFilter {
-    @Override protected boolean shouldNotFilter(HttpServletRequest request) { return !request.getRequestURI().startsWith("/mcp/"); }
+    @Override protected boolean shouldNotFilter(HttpServletRequest request) {
+        return !request.getRequestURI().startsWith("/mcp/");
+    }
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         String authorization = request.getHeader("Authorization");
         if (authorization == null || !authorization.startsWith("Bearer ")) { response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "MCP 请求必须携带 Bearer Token"); return; }

@@ -127,7 +127,7 @@ const userInput = ref('')
 const isInputFocused = ref(false)
 
 // 模型选择相关的变量
-const currentModel = ref('glm-5') // 默认绑定智谱 GLM-5
+const currentModel = ref('qwen-plus')
 const modelOptions = ref([])
 
 const { isAiPanelVisible, chatHistory, isAiThinking, currentConvId, toggleAiPanel, appendMessage, resetConversation, saveConvId} = useGlobalAi()
@@ -136,15 +136,16 @@ const { isAiPanelVisible, chatHistory, isAiThinking, currentConvId, toggleAiPane
 onMounted(async () => {
   try {
     const res = await aiApi.getModels()
-    modelOptions.value = res.data
-    currentModel.value = 'glm-5'
+    modelOptions.value = res.data.filter(model => model.available)
+    currentModel.value = modelOptions.value.some(model => model.code === 'qwen-plus')
+      ? 'qwen-plus'
+      : modelOptions.value[0]?.code
   } catch {
     // 接口报错时的本地保底数据
     modelOptions.value = [
-      { code: 'glm-5', name: '智谱GLM-5', available: true },
-      { code: 'qwen3.6-plus', name: '通义千问 Plus', available: true },
+      { code: 'qwen-plus', name: '通义千问 Plus', available: true },
     ]
-    currentModel.value = 'glm-5'
+    currentModel.value = 'qwen-plus'
   }
 })
 

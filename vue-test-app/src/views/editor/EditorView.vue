@@ -324,7 +324,7 @@ const strategyMap = ref({ 'AUTO': '智能自动分段' }) // 默认保底数据
 const selectedStrategy = ref('AUTO')
 const segments = ref([])
 const indexing = ref(false)
-const currentModel = ref('qwen3.6-plus') // 默认模型
+const currentModel = ref('qwen-plus') // 默认模型
 const modelOptions = ref([])
 
 // 获取可用模型列表
@@ -332,17 +332,17 @@ const fetchModels = async () => {
   try {
     const res = await aiApi.getModels()
     console.log('所有模型:', JSON.stringify(res.data, null, 2))
-    modelOptions.value = res.data
+    modelOptions.value = res.data.filter(model => model.available)
 
-    // 默认用 GLM-5
-    currentModel.value = 'glm-5'
+    currentModel.value = modelOptions.value.some(model => model.code === 'qwen-plus')
+      ? 'qwen-plus'
+      : modelOptions.value[0]?.code
 
   } catch {
     modelOptions.value = [
-      { code: 'glm-5', name: '智谱GLM-5', available: true },
-      { code: 'qwen3.6-plus', name: '通义千问 Plus', available: true },
+      { code: 'qwen-plus', name: '通义千问 Plus', available: true },
     ]
-    currentModel.value = 'glm-5'
+    currentModel.value = 'qwen-plus'
   }
 }
 

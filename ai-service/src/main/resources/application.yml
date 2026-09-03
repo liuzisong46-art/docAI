@@ -51,8 +51,9 @@ spring:
   ai:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
+      base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
       chat:
-        model: qwen3.6-plus
+        model: qwen-plus
       embedding:
         model: text-embedding-v1
         api-key: ${DASHSCOPE_API_KEY}
@@ -108,22 +109,22 @@ ai:
   # 多模型配置
   models:
     openai:
-      qwen3.6-plus:
+      qwen-plus:
         api-key: ${OPENAI_API_KEY}
         base-url: ${OPENAI_BASE_URL:https://coding.dashscope.aliyuncs.com/v1}
         enabled: true
       glm-5:
         api-key: ${OPENAI_API_KEY}
         base-url: ${OPENAI_BASE_URL:https://coding.dashscope.aliyuncs.com/v1}
-        enabled: true
+        enabled: false
       kimi-k2.5:
         api-key: ${OPENAI_API_KEY}
         base-url: ${OPENAI_BASE_URL:https://coding.dashscope.aliyuncs.com/v1}
-        enabled: true
+        enabled: false
       MiniMax-M2.5:
         api-key: ${OPENAI_API_KEY}
         base-url: ${OPENAI_BASE_URL:https://coding.dashscope.aliyuncs.com/v1}
-        enabled: true
+        enabled: false
 
 # MinIO配置
 minio:

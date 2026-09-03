@@ -1,32 +1,41 @@
 package com.javaee.aiservice.skills;
 
 import com.javaee.aiservice.agent.ChatService;
-import com.javaee.aiservice.security.BucketPermissionService;
-import com.javaee.aiservice.security.RequestUserContext;
-import com.javaee.aiservice.service.MinIOService;
+import com.javaee.aiservice.skills.tool.HtmlPresentationRenderTool;
+import com.javaee.aiservice.skills.tool.LocalArtifactWriteTool;
+import com.javaee.aiservice.skills.tool.PptContentGenerationTool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
 public class SkillRegistry {
 
-    private final Map<String, Skill> skills = new HashMap<>();
+    private final Map<String, Skill> skills = new LinkedHashMap<>();
+    private final Map<String, TypedSkill<?, ?>> typedSkills = new LinkedHashMap<>();
 
     @Autowired
-    public SkillRegistry(MinIOService minIOService, ChatService chatService,
-                         BucketPermissionService bucketPermissionService,
-                         RequestUserContext requestUserContext) {
-        // 注册技能
-        registerSkill(new FileUploadSkill(minIOService, bucketPermissionService, requestUserContext));
-        registerSkill(new FileDownloadSkill(minIOService, bucketPermissionService, requestUserContext));
-        registerSkill(new HtmlPptSkill(chatService));
+    public SkillRegistry(ChatService chatService) {
+        registerSkill(new HtmlPptSkill(
+                new PptContentGenerationTool(chatService),
+                new HtmlPresentationRenderTool(),
+                new LocalArtifactWriteTool()));
     }
 
     public void registerSkill(Skill skill) {
         skills.put(skill.getName(), skill);
+        if (skill instanceof TypedSkill<?, ?> typedSkill) {
+            String id = typedSkill.getDefinition().id();
+            TypedSkill<?, ?> existing = typedSkills.putIfAbsent(id, typedSkill);
+            if (existing != null && existing != typedSkill) {
+                throw new IllegalStateException("重复的Skill ID: " + id);
+            }
+            skills.put(id, skill);
+        }
     }
 
     public Skill getSkill(String name) {
@@ -34,6 +43,12 @@ public class SkillRegistry {
     }
 
     public Map<String, Skill> getAllSkills() {
-        return skills;
+        return Collections.unmodifiableMap(skills);
+    }
+
+    public List<SkillDefinition> getDefinitions() {
+        return typedSkills.values().stream()
+                .map(TypedSkill::getDefinition)
+                .toList();
     }
 }

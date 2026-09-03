@@ -60,7 +60,8 @@ public class AIServiceFactory {
             } else if ("openai".equals(provider)) {
                 String apiKey = defaultOpenAiApiKey;
                 String baseUrl = defaultOpenAiBaseUrl;
-                boolean enabled = true;
+                // OpenAI 兼容模型默认关闭，避免在未完成提供方适配时暴露为可用选项。
+                boolean enabled = false;
                 
                 if (multiModelConfig.getOpenai().containsKey(modelType.getCode())) {
                     MultiModelConfig.ModelConfig config = multiModelConfig.getOpenai().get(modelType.getCode());

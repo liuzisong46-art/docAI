@@ -10,6 +10,7 @@ import com.javaee.aiservice.conversation.ConversationManager;
 import com.javaee.aiservice.rag.DocumentSegmenter;
 import com.javaee.aiservice.rag.KnowledgeBase;
 import com.javaee.aiservice.security.RequestUserContext;
+import com.javaee.aiservice.skills.SkillDefinition;
 import com.javaee.common.model.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,6 +69,12 @@ public class AgentController {
     @Operation(summary = "获取Agent工具列表", description = "获取统一Agent可调用的全部工具能力")
     public Result<List<AgentToolDefinition>> listTools() {
         return Result.success(agentExecutionService.listTools());
+    }
+
+    @GetMapping("/skills")
+    @Operation(summary = "获取Agent技能列表", description = "获取由多个原子工具编排而成的复合技能")
+    public Result<List<SkillDefinition>> listSkills() {
+        return Result.success(agentExecutionService.listSkills());
     }
 
     /**

@@ -62,9 +62,6 @@ public class AgentToolRegistry {
         register("file-version-switch", "切换文件当前版本。",
                 Map.of("bucketName", "存储桶名称，可选", "objectName", "对象名称，必填",
                         "targetVersionId", "目标版本ID"), Set.of("objectName", "targetVersionId"), true, "file", false);
-        register("html-ppt-generate", "根据大纲生成 HTML PPT。",
-                Map.of("outline", "PPT大纲", "theme", "主题，默认tokyo-night", "title", "标题", "model", "可选模型代码"),
-                Set.of("outline"), false, "generation", false);
         register("document-read", "读取业务文档当前内容。用于在扩写、改写、润色前获取原文档。",
                 Map.of("documentId", "业务文档ID，必填"),
                 Set.of("documentId"), false, "document", false);

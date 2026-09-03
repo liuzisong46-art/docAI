@@ -2,6 +2,8 @@ package com.javaee.aiservice.controller;
 
 import com.javaee.aiservice.dto.HtmlPptRequest;
 import com.javaee.aiservice.skills.SkillExecutorService;
+import com.javaee.aiservice.skills.tool.FileDownloadTool;
+import com.javaee.aiservice.skills.tool.FileUploadTool;
 import com.javaee.common.model.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,10 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import com.javaee.aiservice.service.MinIOService;
 
 @RestController
 @RequestMapping("/api/skills")
@@ -27,12 +27,15 @@ import com.javaee.aiservice.service.MinIOService;
 public class SkillController {
 
     private final SkillExecutorService skillExecutorService;
-    private final MinIOService minIOService;
+    private final FileUploadTool fileUploadTool;
+    private final FileDownloadTool fileDownloadTool;
 
     @Autowired
-    public SkillController(SkillExecutorService skillExecutorService, MinIOService minIOService) {
+    public SkillController(SkillExecutorService skillExecutorService, FileUploadTool fileUploadTool,
+                           FileDownloadTool fileDownloadTool) {
         this.skillExecutorService = skillExecutorService;
-        this.minIOService = minIOService;
+        this.fileUploadTool = fileUploadTool;
+        this.fileDownloadTool = fileDownloadTool;
     }
 
     /**
@@ -49,7 +52,7 @@ public class SkillController {
             @Parameter(description = "存储桶名称（可选）") @RequestParam(required = false) String bucketName,
             @Parameter(description = "文件名称（可选）") @RequestParam(required = false) String objectName) {
         // 直接使用文件上传，不使用JSON格式
-        Object result = skillExecutorService.executeSkill("File Upload Skill", file, bucketName, objectName);
+        Object result = fileUploadTool.execute(new FileUploadTool.Input(file, bucketName, objectName));
         return Result.success(result);
     }
 
@@ -70,26 +73,14 @@ public class SkillController {
         System.out.println("接收到文件下载请求: objectName=" + objectName + ", bucketName=" + bucketName);
         try {
             System.out.println("开始执行文件下载技能...");
-            // 执行技能获取文件流和元数据
-            Object result = skillExecutorService.executeSkill("File Download Skill", objectName, bucketName);
-            System.out.println("执行技能成功，获取到结果");
-            
-            // 检查结果类型
-            if (!(result instanceof Object[])) {
-                throw new RuntimeException("技能返回类型错误，期望Object[]，实际得到: " + result.getClass().getName());
-            }
-            
-            Object[] resultArray = (Object[]) result;
-            if (resultArray.length < 3) {
-                throw new RuntimeException("技能返回数组长度错误，期望至少3，实际得到: " + resultArray.length);
-            }
-            
-            // 提取文件流、内容类型和对象名称
-            InputStream inputStream = (InputStream) resultArray[0];
-            String contentType = (String) resultArray[1];
-            String originalObjectName = (String) resultArray[2];
-            String bucketMessage = resultArray.length > 3 ? (String) resultArray[3] : null;
-            String actualBucketName = resultArray.length > 4 ? (String) resultArray[4] : bucketName;
+            FileDownloadTool.Output result = fileDownloadTool.execute(
+                    new FileDownloadTool.Input(objectName, bucketName));
+            System.out.println("执行文件下载工具成功，获取到结果");
+
+            String contentType = result.contentType();
+            String originalObjectName = result.objectName();
+            String bucketMessage = null;
+            String actualBucketName = result.bucketName();
             
             // 打印桶消息
             if (bucketMessage != null) {
@@ -111,7 +102,7 @@ public class SkillController {
             
             // 包装为资源
             org.springframework.core.io.InputStreamResource resource = 
-                new org.springframework.core.io.InputStreamResource(inputStream);
+                new org.springframework.core.io.InputStreamResource(result.inputStream());
             
             // 确定媒体类型
             MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;

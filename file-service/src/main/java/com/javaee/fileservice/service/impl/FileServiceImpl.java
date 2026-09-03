@@ -826,7 +826,8 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    private void assertMinioBucketAccess() {
+    private void
+    assertMinioBucketAccess() {
         if ("minio".equals(fileStorageConfig.getStorageType())) {
             bucketPermissionService.assertCanAccess(fileStorageConfig.getBucketName());
         }
